@@ -12,6 +12,12 @@ import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.google.gson.Gson
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.*
 import java.io.IOException
 
@@ -31,13 +37,16 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        supportActionBar?.elevation = 0F;
+
         val layouManager:StaggeredGridLayoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
         layouManager.gapStrategy = StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS
         recyclerView.layoutManager = layouManager
         val query = ""
         val URL = "https://pixabay.com/api/?key=" + api_key + "&q=" + query;
-
-        run(URL)
+        CoroutineScope(Main).launch {
+            myfunc(URL)
+        }
 
     }
 
@@ -52,8 +61,11 @@ class MainActivity : AppCompatActivity() {
             object : SearchView.OnQueryTextListener{
                 override fun onQueryTextSubmit(query1: String?): Boolean {
                     query1?.replace(' ', '+');
-                    val URL = "https://pixabay.com/api/?key=" + api_key + "&q=" + query1;
-                    run(URL)
+                    val URL:String = "https://pixabay.com/api/?key=" + api_key + "&q=" + query1;
+                    CoroutineScope(Main).launch {
+                        myfunc(URL)
+                    }
+
                     return true
                 }
 
@@ -67,49 +79,54 @@ class MainActivity : AppCompatActivity() {
         searchView?.setSearchableInfo(searchManager.getSearchableInfo(componentName))
         return super.onCreateOptionsMenu(menu)
 
+
     }
 
 
-    fun run(URL:String) {
 
+    suspend fun myfunc(URL:String) {
+        withContext(Main) {
 
-        request = URL?.let {
-            Request.Builder()
-                .url(it)
-                .build()
-        };
-        recyclerView.adapter = null
+            request = URL?.let {
+                Request.Builder()
+                    .url(it)
+                    .build()
+            };
+            recyclerView.adapter = null
 
-        request?.let {
-            okClient.newCall(it).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    e.printStackTrace()
-                }
+            request?.let {
+                okClient.newCall(it).enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        e.printStackTrace()
+                    }
 
-                override fun onResponse(call: Call, response: Response) {
-                    val body = response?.body?.string()
-                    Log.d("THIS --- ",  body)
+                    override fun onResponse(call: Call, response: Response) {
+                        val body = response?.body?.string()
+                        Log.d("THIS --- ",  body)
 
-                    val gson = Gson()
-                    val obj:PicModel = gson.fromJson(body, PicModel::class.java)
+                        val gson = Gson()
+                        val obj:PicModel = gson.fromJson(body, PicModel::class.java)
 
-                    val adapter:Adapter = Adapter(obj, this@MainActivity)
+                        val adapter:Adapter = Adapter(obj, this@MainActivity)
 
-                    runOnUiThread(
-                        object : Runnable{
-                            override fun run() {
-                                recyclerView.adapter = adapter
+                        runOnUiThread(
+                            object : Runnable{
+                                override fun run() {
+                                    recyclerView.adapter = adapter
 
+                                }
                             }
-                        }
-                    )
+                        )
 
-                    Log.d("TJOS", "onResponse: ");
-                }
-            })
+                        Log.d("TJOS", "onResponse: ");
+                    }
+                })
+            }
+
         }
 
 
     }
+
 
 }

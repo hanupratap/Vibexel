@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape
+<ripple
     xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle"
-    >
+    xmlns:tools="http://schemas.android.com/tools"
+     android:color="#79A54F5F">
+<item>
+        <shape android:shape="rectangle"
+                >
+                <solid android:color="@color/cardview_dark_background"
+                    />
+                <corners android:radius="0dp"/>
+        </shape>
+
+</item>
 
 
-        <solid android:color="@android:color/secondary_text_light"
-            />
-        <corners android:radius="10dp"/>
 
-</shape>
+</ripple>

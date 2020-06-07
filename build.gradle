@@ -7,6 +7,7 @@ buildscript {
         jcenter()
         maven { url  "https://dl.bintray.com/unsplash/unsplash-photopicker-android" }
         maven { url 'https://maven.google.com' }
+
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:4.0.0'
@@ -22,7 +23,7 @@ allprojects {
     repositories {
         google()
         jcenter()
-        
+        maven { url "https://jitpack.io" }
     }
 }
 
