@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.pictures.models.SearchResponse
 import com.example.pictures.models.UnsplashPhoto
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_image_preview.*
 import kotlinx.android.synthetic.main.activity_main.*
@@ -29,6 +30,8 @@ import kotlinx.coroutines.withContext
 import okhttp3.*
 import java.io.IOException
 
+import kotlin.Exception
+
 external fun decodeURIComponent(encodedURI: String): String
 
 class MainActivity : AppCompatActivity() {
@@ -36,19 +39,17 @@ class MainActivity : AppCompatActivity() {
     private val okClient by lazy { OkHttpClient() }
 
 
+    lateinit var URL: String
+    var mainPicList: MutableList<UnsplashPhoto>? = ArrayList()
 
-    lateinit var URL:String
-    var mainPicList:MutableList<UnsplashPhoto>? = ArrayList()
+    lateinit var query: String
+    var page: Int = 1
 
-    lateinit var query:String
-    var page:Int = 1
+    var lastVisibleItem: Int? = null
 
-    var lastVisibleItem:Int? = null
+    lateinit var access_key: String
 
-    lateinit var access_key:String
-
-    lateinit var adapter:Adapter
-
+    lateinit var adapter: Adapter
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -64,7 +65,8 @@ class MainActivity : AppCompatActivity() {
         supportActionBar?.elevation = 0F;
 
 
-        val layouManager:StaggeredGridLayoutManager = StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
+        val layouManager: StaggeredGridLayoutManager =
+            StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
 
         layouManager.gapStrategy = StaggeredGridLayoutManager.GAP_HANDLING_MOVE_ITEMS_BETWEEN_SPANS
         recyclerView.layoutManager = layouManager
@@ -72,7 +74,8 @@ class MainActivity : AppCompatActivity() {
 
 
         query = "random"
-        URL ="https://api.unsplash.com/search/photos?query=" + query + "&?page="+page+"&client_id=" + access_key ;
+        URL =
+            "https://api.unsplash.com/search/photos?query=" + query + "&?page=" + page + "&client_id=" + access_key;
         CoroutineScope(Main).launch {
             myfunc(URL)
         }
@@ -81,21 +84,21 @@ class MainActivity : AppCompatActivity() {
 
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                if(dy>0)
-                {
+                if (dy > 0) {
                     val visibleItemCount = layouManager.childCount
-                    val totalItemCount:Int = layouManager.itemCount
+                    val totalItemCount: Int = layouManager.itemCount
 
-                    val lastVisiblePositions = layouManager.findLastCompletelyVisibleItemPositions(null)
+                    val lastVisiblePositions =
+                        layouManager.findLastCompletelyVisibleItemPositions(null)
                     lastVisibleItem = getLastVisibleItem(lastVisiblePositions)
                     val visibleThreshold = layouManager.spanCount
 
-                    if( visibleItemCount + visibleThreshold >= totalItemCount)
-                    {
+                    if (visibleItemCount + visibleThreshold >= totalItemCount) {
                         page++
-                        URL = "https://api.unsplash.com/search/photos?query=" + query + "&client_id=" + access_key +"&page="+page
+                        URL =
+                            "https://api.unsplash.com/search/photos?query=" + query + "&client_id=" + access_key + "&page=" + page
 
-                       CoroutineScope(IO).launch {
+                        CoroutineScope(IO).launch {
 
                             myfunc(URL)
 
@@ -106,8 +109,6 @@ class MainActivity : AppCompatActivity() {
                 super.onScrolled(recyclerView, dx, dy)
             }
         })
-
-
 
 
     }
@@ -129,26 +130,25 @@ class MainActivity : AppCompatActivity() {
         menuInflater.inflate(R.menu.my_menu, menu)
 
 
-
         val searchItem: MenuItem? = menu?.findItem(R.id.action_search)
         val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
         val searchView: SearchView? = searchItem?.actionView as SearchView
         searchView?.setOnQueryTextListener(
-            object : SearchView.OnQueryTextListener{
+            object : SearchView.OnQueryTextListener {
                 override fun onQueryTextSubmit(query1: String?): Boolean {
                     query1?.replace(' ', '+')
-                    if(query1!=null)
-                    {
+                    if (query1 != null) {
                         page = 1
                         query = query1
-                        URL = "https://api.unsplash.com/search/photos?query=" + query + "&client_id=" + access_key +"&page="+page
+                        URL =
+                            "https://api.unsplash.com/search/photos?query=" + query + "&client_id=" + access_key + "&page=" + page
                         adapter.data?.clear()
                     }
 
 
 
 
-                   CoroutineScope(Main).launch {
+                    CoroutineScope(Main).launch {
                         myfunc(URL)
 
                     }
@@ -170,46 +170,46 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    suspend fun myfunc(URL:String) {
+    suspend fun myfunc(URL: String) {
         withContext(Main) {
 
 
-
-
-            var request:Request = URL?.let {
+            var request: Request = URL?.let {
                 Request.Builder()
                     .url(it)
                     .build()
             }
 
-
-            request?.let {
-                okClient.newCall(it).enqueue(object : Callback {
-                    override fun onFailure(call: Call, e: IOException) {
-                        e.printStackTrace()
-                    }
-
-                    override fun onResponse(call: Call, response: Response) {
-                        val body = response?.body?.string()
-                        Log.d("THIS --- ",  body)
-
-                        val gson = Gson()
-                        val obj: SearchResponse? = gson.fromJson(body, SearchResponse::class.java)
-
-                        val tempList: List<UnsplashPhoto>? = obj?.results
-
-                        if (tempList != null) {
-                            for(i in tempList) {
-                                adapter.data?.add(i)
-                            }
-
+            try {
+                request?.let {
+                    okClient.newCall(it).enqueue(object : Callback {
+                        override fun onFailure(call: Call, e: IOException) {
+                            e.printStackTrace()
                         }
+
+                        override fun onResponse(call: Call, response: Response) {
+                            val body = response?.body?.string()
+                            Log.d("THIS --- ", body)
+
+                            val gson = Gson()
+
+                            val obj: SearchResponse? =
+                                gson.fromJson(body, SearchResponse::class.java)
+
+
+
+                            if (obj?.results != null) {
+                                for (i in obj?.results) {
+                                    adapter.data?.add(i)
+                                }
+
+                            }
 
 
 
 
                             runOnUiThread(
-                                object : Runnable{
+                                object : Runnable {
                                     override fun run() {
                                         adapter.notifyDataSetChanged()
 
@@ -222,16 +222,23 @@ class MainActivity : AppCompatActivity() {
 
 
 
-                        Log.d("TJOS", "onResponse: ");
-                    }
-                })
+                            Log.d("TJOS", "onResponse: ");
+                        }
+                    })
+                }
             }
+            catch (e:Exception)
+            {
+                e.printStackTrace()
+            }
+
+
+
+
         }
 
 
-
     }
-
 
 
 }
