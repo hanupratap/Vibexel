@@ -1,36 +1,20 @@
 package com.example.pictures
 
-
-import android.app.AlertDialog
-import android.app.ProgressDialog
-import android.app.WallpaperManager
 import android.content.Context
-import android.content.DialogInterface
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
-import android.os.Environment
-import android.util.DisplayMetrics
 import android.view.*
 import android.widget.ImageView
-import android.widget.TextView
-import androidx.core.graphics.scale
 import androidx.recyclerview.widget.RecyclerView
-import com.example.pictures.models.SearchResponse
 import com.example.pictures.models.UnsplashPhoto
 import com.squareup.picasso.Picasso
-import com.squareup.picasso.Target
 import kotlinx.android.synthetic.main.item_pic.view.*
-import java.io.File
-import java.io.FileOutputStream
-import java.io.OutputStream
 
 
 class Adapter(var data: MutableList<UnsplashPhoto>?, val context: Context) :
     RecyclerView.Adapter<Adapter.ViewHolder>() {
 
 
-    var page:Int = 1
+    var page: Int = 1
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val image: ImageView = itemView.pic_holder
@@ -54,11 +38,11 @@ class Adapter(var data: MutableList<UnsplashPhoto>?, val context: Context) :
         if (data != null) {
             Picasso
                 .get() // give it the context
-                .load(data!!.get(position).urls.small)
+                .load(data!![position].urls.small)
                 .into(holder.image)
         }
 
-        var wallpaper: UnsplashPhoto? = data?.get(position)
+        val wallpaper: UnsplashPhoto? = data?.get(position)
 
 
 

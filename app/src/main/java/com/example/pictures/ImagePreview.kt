@@ -3,18 +3,18 @@ package com.example.pictures
 import android.app.AlertDialog
 import android.app.ProgressDialog
 import android.app.WallpaperManager
-import android.content.ContentValues
+
 import android.content.Context
 import android.content.DialogInterface
-import android.content.res.ColorStateList
+
 import android.graphics.Bitmap
-import android.graphics.Color
-import android.graphics.drawable.BitmapDrawable
+
+import android.graphics.Point
+
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.provider.MediaStore
-import android.view.Display
-import android.view.Gravity
+
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -27,8 +27,7 @@ import kotlinx.android.synthetic.main.activity_image_preview.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
-import okhttp3.internal.wait
-import java.lang.Exception
+import kotlinx.coroutines.withContext
 
 
 class ImagePreview : AppCompatActivity(), Target {
@@ -50,12 +49,9 @@ class ImagePreview : AppCompatActivity(), Target {
 
 
         if (wallpaper != null) {
-            val temp:String = "by " +  wallpaper.user.name
+            val temp: String = "by " + wallpaper.user.name
             photo_owner.text = temp
         }
-
-
-
 
 
 //        try
@@ -78,18 +74,17 @@ class ImagePreview : AppCompatActivity(), Target {
 //        }
 
 
-
         supportActionBar?.hide()
-
-
 
 
         val wm: WindowManager =
             getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val display: Display = wm.defaultDisplay
+        val size = Point()
+        wm.defaultDisplay.getSize(size)
 
         if (wallpaper != null) {
-            Picasso.get().load(wallpaperUrl).resize(wallpaper.width, display.height).centerInside().into(this)
+            Picasso.get().load(wallpaperUrl).resize(wallpaper.width, size.y).centerInside()
+                .into(this)
         }
 
 
@@ -111,15 +106,15 @@ class ImagePreview : AppCompatActivity(), Target {
 
         val wm: WindowManager =
             getSystemService(Context.WINDOW_SERVICE) as WindowManager
-        val display: Display = wm.defaultDisplay
 
 
         val imageView = image_prev
 
         imageView.setImageBitmap(bitmap)
 
-        fab1.setOnClickListener{
+        fab1.setOnClickListener {
             showSnackbar("Downloading Image")
+
             MediaStore.Images.Media.insertImage(
                 contentResolver,
                 bitmap,
@@ -134,7 +129,7 @@ class ImagePreview : AppCompatActivity(), Target {
 
             AlertDialog.Builder(this)
                 .setTitle("Select Options")
-                .setPositiveButton("Home") { dialog: DialogInterface?, which: Int ->
+                .setPositiveButton("Home") { _: DialogInterface?, _: Int ->
                     showSnackbar("Wallpaper will be applied shortly, please wait...")
                     CoroutineScope(IO).launch {
 
@@ -142,19 +137,20 @@ class ImagePreview : AppCompatActivity(), Target {
                         val wallpaperManager: WallpaperManager =
                             WallpaperManager.getInstance(this@ImagePreview)
 
-                        wallpaperManager.setBitmap(
-                            bitmap,
-                            null,
-                            true,
-                            WallpaperManager.FLAG_SYSTEM
-                        )
-
-
+                        withContext(IO)
+                        {
+                            wallpaperManager.setBitmap(
+                                bitmap,
+                                null,
+                                true,
+                                WallpaperManager.FLAG_SYSTEM
+                            )
+                        }
 
 
                     }
                 }
-                .setNegativeButton("Lock"){dialog: DialogInterface?, which: Int ->
+                .setNegativeButton("Lock") { dialog: DialogInterface?, which: Int ->
                     showSnackbar("Wallpaper will be applied shortly, please wait...")
                     CoroutineScope(IO).launch {
 
@@ -162,19 +158,17 @@ class ImagePreview : AppCompatActivity(), Target {
                         val wallpaperManager: WallpaperManager =
                             WallpaperManager.getInstance(this@ImagePreview)
 
-                        wallpaperManager.setBitmap(
-                            bitmap,
-                            null,
-                            true,
-                            WallpaperManager.FLAG_LOCK
-                        )
 
-                        MediaStore.Images.Media.insertImage(
-                            getContentResolver(),
-                            bitmap,
-                            intent.getStringExtra("title"),
-                            intent.getStringExtra("description")
-                        )
+
+                        withContext(IO)
+                        {
+                            wallpaperManager.setBitmap(
+                                bitmap,
+                                null,
+                                true,
+                                WallpaperManager.FLAG_LOCK
+                            )
+                        }
 
 
                     }
@@ -184,14 +178,13 @@ class ImagePreview : AppCompatActivity(), Target {
                 .show()
 
 
-
         }
 
 
     }
 
 
-    fun showSnackbar(message:String) {
+    fun showSnackbar(message: String) {
         runOnUiThread {
             Snackbar.make(
                 relativeLayout,
