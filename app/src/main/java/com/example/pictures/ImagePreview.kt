@@ -1,139 +1,207 @@
 package com.example.pictures
 
+import android.app.AlertDialog
 import android.app.ProgressDialog
 import android.app.WallpaperManager
+import android.content.ContentValues
 import android.content.Context
+import android.content.DialogInterface
+import android.content.res.ColorStateList
 import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
-import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
-import android.util.DisplayMetrics
 import android.view.Display
+import android.view.Gravity
 import android.view.WindowManager
-import androidx.annotation.RequiresApi
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.github.chrisbanes.photoview.PhotoView
+import com.example.pictures.models.UnsplashPhoto
+
+import com.google.android.material.snackbar.Snackbar
 import com.squareup.picasso.Picasso
 import com.squareup.picasso.Target
-import com.theartofdev.edmodo.cropper.CropImage
-import com.theartofdev.edmodo.cropper.CropImageView
 import kotlinx.android.synthetic.main.activity_image_preview.*
-import java.io.File
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.launch
+import okhttp3.internal.wait
+import java.lang.Exception
 
 
-class ImagePreview : AppCompatActivity() {
+class ImagePreview : AppCompatActivity(), Target {
+    lateinit var progresDialog: ProgressDialog
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(com.example.pictures.R.layout.activity_image_preview)
 
-        val progresDialog: ProgressDialog = ProgressDialog(this)
-        progresDialog.setTitle("Downloading Image")
+
+        progresDialog = ProgressDialog(this)
+        progresDialog.setTitle("Please wait")
+        progresDialog.setMessage("Loading image")
         progresDialog.show()
 
-        val wallpaperUrl:String = intent.getStringExtra("image")
+        val wallpaper: UnsplashPhoto? = intent.extras?.getParcelable<UnsplashPhoto>("wallpaper")
+
+        val wallpaperUrl: String? = wallpaper?.urls?.full
+
+
+        if (wallpaper != null) {
+            val temp:String = "by " +  wallpaper.user.name
+            photo_owner.text = temp
+        }
+
+
+
+
+
+//        try
+//        {
+//            val myColor = Color.parseColor(wallpaper?.color)
+//            if(myColor == Color.BLACK || myColor == Color.TRANSPARENT)
+//            {
+//                fab.supportBackgroundTintList = ColorStateList.valueOf(Color.WHITE)
+//                fab.foregroundTintList = ColorStateList.valueOf(Color.BLACK)
+//            }
+//            else{
+//                fab.supportBackgroundTintList = ColorStateList.valueOf(myColor)
+//
+//            }
+//
+//        }
+//        catch (e:Exception)
+//        {
+//            e.printStackTrace()
+//        }
+
+
 
         supportActionBar?.hide()
-        try {
-            Picasso.get()
-                .load(wallpaperUrl)
-                .into(object : Target {
-                    override fun onPrepareLoad(placeHolderDrawable: Drawable?) {
-
-                    }
-
-                    override fun onBitmapFailed(e: Exception?, errorDrawable: Drawable?) {
-                        progresDialog.dismiss()
-
-                    }
-
-                    @RequiresApi(Build.VERSION_CODES.Q)
-                    override fun onBitmapLoaded(bitmap: Bitmap?, from: Picasso.LoadedFrom?) {
 
 
-                        progresDialog.dismiss()
-
-                        val wm: WindowManager =
-                            getSystemService(Context.WINDOW_SERVICE) as WindowManager
-                        val display: Display = wm.defaultDisplay
 
 
-                        val imageView:PhotoView = image_prev
+        val wm: WindowManager =
+            getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val display: Display = wm.defaultDisplay
 
-                        imageView.setImageBitmap(bitmap)
-
-
-                        fab.setOnClickListener{
-                            try {
-                                val wallpaperManager: WallpaperManager =
-                                    WallpaperManager.getInstance(this@ImagePreview)
-
-                                val metrics:DisplayMetrics = DisplayMetrics()
-                                windowManager.defaultDisplay.getMetrics(metrics)
-                                val height = metrics.heightPixels
-                                val width = metrics.widthPixels
-                                if(bitmap!=null)
-                                {
-                                    val bitmap1:Bitmap = Bitmap.createScaledBitmap(bitmap,2*width, height, true )
-                                    wallpaperManager.setBitmap(bitmap, null, true)
-
-                                }
- 
-                                wallpaperManager.suggestDesiredDimensions(
-                                    height,
-                                    width
-                                )
-                            }
-                            catch (e:java.lang.Exception)
-                            {
-                                e.printStackTrace()
-                            }
-
-                        }
+        if (wallpaper != null) {
+            Picasso.get().load(wallpaperUrl).resize(wallpaper.width, display.height).centerInside().into(this)
+        }
 
 
-//                            AlertDialog.Builder(context)
-//                                .setTitle("Confirm Wallpaper")
-//                                .setPositiveButton("Yes") { dialog: DialogInterface?, which: Int ->
-//                                    try {
-//
-//
-//                                        val wallpaperManager: WallpaperManager =
-//                                            WallpaperManager.getInstance(context)
-//
-//                                        wallpaperManager.setBitmap(bitmap, null, true)
-//
-//
-//                                        wallpaperManager.suggestDesiredDimensions(
-//                                            display.width,
-//                                            display.height
-//                                        );
-//
-//
-//                                        if (bitmap != null) {
-//                                            storeImage(
-//                                                bitmap,
-//                                                data.hits.get(position).id.toString()
-//                                            )
-//                                        }
-//
-//
-//                                    } catch (e: java.lang.Exception) {
-//
-//                                    }
-//                                }
-//                                .setNegativeButton("No", null)
-//                                .show()
+    }
+
+    override fun onPrepareLoad(placeHolderDrawable: Drawable?) {
+        Toast.makeText(this, "Preparing image", Toast.LENGTH_LONG).show()
+    }
+
+    override fun onBitmapFailed(e: java.lang.Exception?, errorDrawable: Drawable?) {
+        Toast.makeText(this, "Failed", Toast.LENGTH_LONG).show()
+
+        progresDialog.dismiss()
+    }
+
+    override fun onBitmapLoaded(bitmap: Bitmap?, from: Picasso.LoadedFrom?) {
+
+        progresDialog.dismiss()
+
+        val wm: WindowManager =
+            getSystemService(Context.WINDOW_SERVICE) as WindowManager
+        val display: Display = wm.defaultDisplay
+
+
+        val imageView = image_prev
+
+        imageView.setImageBitmap(bitmap)
+
+        fab1.setOnClickListener{
+            showSnackbar("Downloading Image")
+            MediaStore.Images.Media.insertImage(
+                contentResolver,
+                bitmap,
+                intent.getStringExtra("title"),
+                intent.getStringExtra("description")
+            )
+
+        }
+
+        fab.setOnClickListener {
+
+
+            AlertDialog.Builder(this)
+                .setTitle("Select Options")
+                .setPositiveButton("Home") { dialog: DialogInterface?, which: Int ->
+                    showSnackbar("Wallpaper will be applied shortly, please wait...")
+                    CoroutineScope(IO).launch {
+
+
+                        val wallpaperManager: WallpaperManager =
+                            WallpaperManager.getInstance(this@ImagePreview)
+
+                        wallpaperManager.setBitmap(
+                            bitmap,
+                            null,
+                            true,
+                            WallpaperManager.FLAG_SYSTEM
+                        )
+
+
 
 
                     }
+                }
+                .setNegativeButton("Lock"){dialog: DialogInterface?, which: Int ->
+                    showSnackbar("Wallpaper will be applied shortly, please wait...")
+                    CoroutineScope(IO).launch {
 
-                })
-        } catch (e: java.lang.Exception) {
-            progresDialog.dismiss()
+
+                        val wallpaperManager: WallpaperManager =
+                            WallpaperManager.getInstance(this@ImagePreview)
+
+                        wallpaperManager.setBitmap(
+                            bitmap,
+                            null,
+                            true,
+                            WallpaperManager.FLAG_LOCK
+                        )
+
+                        MediaStore.Images.Media.insertImage(
+                            getContentResolver(),
+                            bitmap,
+                            intent.getStringExtra("title"),
+                            intent.getStringExtra("description")
+                        )
+
+
+                    }
+                }
+                .setNeutralButton("Cancel", null)
+                .create()
+                .show()
+
+
+
+        }
+
+
+    }
+
+
+    fun showSnackbar(message:String) {
+        runOnUiThread {
+            Snackbar.make(
+                relativeLayout,
+                message,
+                Snackbar.LENGTH_LONG
+            ).show()
         }
     }
 
 
 }
+
+

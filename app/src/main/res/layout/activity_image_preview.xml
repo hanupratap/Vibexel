@@ -2,52 +2,67 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/relativeLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.pictures.ImagePreview"
     android:orientation="vertical"
+    tools:context="com.example.pictures.ImagePreview"
+
     >
 
 
+    <com.github.chrisbanes.photoview.PhotoView
+        android:id="@+id/image_prev"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop" />
 
-        <com.github.chrisbanes.photoview.PhotoView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/image_prev"
-            android:scaleType="centerCrop"
-            android:src="@mipmap/ic_launcher1_foreground"
 
-            />
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab"
+        android:layout_width="wrap_content"
+
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:layout_margin="10dp"
+        android:backgroundTint="@color/cardview_light_background"
+        android:src="@drawable/ic_baseline_wallpaper_24"
+        app:borderWidth="0dp"
+        app:fabSize="normal" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fab1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_margin="10dp"
+        android:backgroundTint="@color/ic_launcher1_background"
+        android:src="@drawable/ic_baseline_cloud_download_24"
+        app:borderWidth="5dp"
+        app:fabSize="mini"
+
+        />
 
 
 
     <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Preview"
-        android:padding="10dp"
-        android:textSize="25dp"
-        android:textColor="#B9FFFFFF"
-
-        android:shadowColor="@color/design_default_color_on_secondary"
-        android:shadowDx="5"
-        android:shadowDy="3"
-        android:shadowRadius="2"
-
-        />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/photo_owner"
         android:layout_width="wrap_content"
+
         android:layout_height="wrap_content"
 
-        app:fabSize="normal"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentEnd="true"
-        android:layout_margin="10dp"
-        android:id="@+id/fab"
-        android:src="@drawable/ic_baseline_wallpaper_24"
-        />
 
+        android:layout_alignParentBottom="true"
+        android:padding="10dp"
+        android:shadowColor="@color/design_default_color_on_secondary"
+         android:shadowDx="1"
+        android:shadowDy="1"
+        android:shadowRadius="5"
+        android:text="@string/app_name"
+        android:textColor="#ddd"
+        android:textSize="18dp" />
 
 
 </RelativeLayout>
