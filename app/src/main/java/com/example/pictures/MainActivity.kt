@@ -2,25 +2,25 @@ package com.example.pictures
 
 import android.app.SearchManager
 import android.content.Context
-import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.view.WindowManager
+import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.ActionBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.appcompat.widget.Toolbar
+import androidx.constraintlayout.solver.widgets.WidgetContainer
+import androidx.core.view.MenuItemCompat
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.example.pictures.models.SearchResponse
 import com.example.pictures.models.UnsplashPhoto
 import com.google.gson.Gson
-import com.google.gson.JsonSyntaxException
-import com.squareup.picasso.Picasso
-import kotlinx.android.synthetic.main.activity_image_preview.*
+import com.google.gson.reflect.TypeToken
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
@@ -28,9 +28,10 @@ import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.*
+import org.w3c.dom.Text
 import java.io.IOException
+import java.lang.reflect.Type
 
-import kotlin.Exception
 
 external fun decodeURIComponent(encodedURI: String): String
 
@@ -42,7 +43,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var URL: String
     var mainPicList: MutableList<UnsplashPhoto>? = ArrayList()
 
-    lateinit var query: String
+    var query: String = ""
     var page: Int = 1
 
     var lastVisibleItem: Int? = null
@@ -51,11 +52,20 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var adapter: Adapter
 
+    fun getQuery(query: String): String {
+        if (query.equals("")) {
+            URL =
+                "https://api.unsplash.com/photos/?" + "page=" + page + "&client_id=" + access_key;
+        } else {
+            URL =
+                "https://api.unsplash.com/search/photos?query=" + query + "&?page=" + page + "&client_id=" + access_key;
+        }
+        return URL
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
 
 
         adapter = Adapter(mainPicList, this@MainActivity)
@@ -73,12 +83,12 @@ class MainActivity : AppCompatActivity() {
         recyclerView.adapter = adapter
 
 
-        query = "random"
-        URL =
-            "https://api.unsplash.com/search/photos?query=" + query + "&?page=" + page + "&client_id=" + access_key;
+        URL = getQuery("")
+
         CoroutineScope(Main).launch {
             myfunc(URL)
         }
+
 
 
 
@@ -93,16 +103,24 @@ class MainActivity : AppCompatActivity() {
                     lastVisibleItem = getLastVisibleItem(lastVisiblePositions)
                     val visibleThreshold = layouManager.spanCount
 
-                    if (visibleItemCount + visibleThreshold >= totalItemCount) {
+                    if (lastVisiblePositions[1] + visibleThreshold + 2 >= totalItemCount) {
                         page++
-                        URL =
-                            "https://api.unsplash.com/search/photos?query=" + query + "&client_id=" + access_key + "&page=" + page
+                        URL = getQuery(query)
 
-                        CoroutineScope(IO).launch {
+                        if (query.equals("")) {
+                            CoroutineScope(IO).launch {
 
-                            myfunc(URL)
+                                myfunc(URL)
 
+                            }
+                        } else {
+                            CoroutineScope(IO).launch {
+
+                                myfuncSearch(URL)
+
+                            }
                         }
+
                     }
 
                 }
@@ -126,6 +144,8 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+
+
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.my_menu, menu)
 
@@ -140,8 +160,7 @@ class MainActivity : AppCompatActivity() {
                     if (query1 != null) {
                         page = 1
                         query = query1
-                        URL =
-                            "https://api.unsplash.com/search/photos?query=" + query + "&client_id=" + access_key + "&page=" + page
+                        URL = getQuery(query1)
                         adapter.data?.clear()
                     }
 
@@ -149,7 +168,7 @@ class MainActivity : AppCompatActivity() {
 
 
                     CoroutineScope(Main).launch {
-                        myfunc(URL)
+                        myfuncSearch(URL)
 
                     }
 
@@ -163,14 +182,104 @@ class MainActivity : AppCompatActivity() {
 
             }
         )
+
         searchView?.setSearchableInfo(searchManager.getSearchableInfo(componentName))
         return super.onCreateOptionsMenu(menu)
 
 
     }
 
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when(item.itemId)
+        {
+            R.id.home -> {
+                if(!query.equals(""))
+                {
+                    query = ""
+                    CoroutineScope(Main).launch {
+                        adapter.data?.clear()
+                        myfunc(getQuery(""))
+                    }
+
+                }
+
+
+
+                return  true
+            }
+            else -> return true
+        }
+    }
 
     suspend fun myfunc(URL: String) {
+        withContext(Main) {
+
+
+            var request: Request = URL?.let {
+                Request.Builder()
+                    .url(it)
+                    .build()
+            }
+
+            try {
+                request?.let {
+                    okClient.newCall(it).enqueue(object : Callback {
+                        override fun onFailure(call: Call, e: IOException) {
+                            e.printStackTrace()
+                            Toast.makeText(this@MainActivity, "No Result", Toast.LENGTH_LONG).show()
+                        }
+
+                        override fun onResponse(call: Call, response: Response) {
+                            val body = response?.body?.string()
+
+                            if(response==null)
+                            {
+                                Toast.makeText(this@MainActivity, "No Result", Toast.LENGTH_LONG).show()
+
+                            }
+//                            Log.d("THIS --- ", body)
+
+                            val gson = Gson()
+
+
+                            val listType: Type =
+                                object : TypeToken<ArrayList<UnsplashPhoto?>?>() {}.type
+
+
+                            val obj: List<UnsplashPhoto>
+                            obj =
+                                gson.fromJson(body, listType)
+                            if (obj != null) {
+                                for (i in obj) {
+                                    adapter.data?.add(i)
+                                }
+                            }
+                            else
+                            {
+                                Toast.makeText(this@MainActivity, "No Result", Toast.LENGTH_LONG).show()
+                            }
+
+                            runOnUiThread(
+                                object : Runnable {
+                                    override fun run() {
+                                        adapter.notifyDataSetChanged()
+
+                                    }
+                                }
+                            )
+                        }
+                    })
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+
+        }
+
+    }
+
+    suspend fun myfuncSearch(URL: String) {
         withContext(Main) {
 
 
@@ -193,17 +302,20 @@ class MainActivity : AppCompatActivity() {
 
                             val gson = Gson()
 
-                            val obj: SearchResponse? =
+
+                            val obj: SearchResponse
+                            obj =
                                 gson.fromJson(body, SearchResponse::class.java)
-
-
-
                             if (obj?.results != null) {
                                 for (i in obj?.results) {
                                     adapter.data?.add(i)
                                 }
 
                             }
+
+
+
+
 
 
 
@@ -226,19 +338,12 @@ class MainActivity : AppCompatActivity() {
                         }
                     })
                 }
-            }
-            catch (e:Exception)
-            {
+            } catch (e: Exception) {
                 e.printStackTrace()
             }
-
-
-
 
         }
 
 
     }
-
-
 }
