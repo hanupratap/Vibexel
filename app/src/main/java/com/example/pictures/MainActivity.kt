@@ -232,41 +232,49 @@ class MainActivity : AppCompatActivity() {
                         override fun onResponse(call: Call, response: Response) {
                             val body = response?.body?.string()
 
-                            if(response==null)
+                            if(response==null || body.equals("Rate Limit Exceeded"))
                             {
-                                Toast.makeText(this@MainActivity, "No Result", Toast.LENGTH_LONG).show()
-
-                            }
-//                            Log.d("THIS --- ", body)
-
-                            val gson = Gson()
-
-
-                            val listType: Type =
-                                object : TypeToken<ArrayList<UnsplashPhoto?>?>() {}.type
-
-
-                            val obj: List<UnsplashPhoto>
-                            obj =
-                                gson.fromJson(body, listType)
-                            if (obj != null) {
-                                for (i in obj) {
-                                    adapter.data?.add(i)
-                                }
+                                runOnUiThread(
+                                    object : Runnable {
+                                        override fun run() {
+                                            Toast.makeText(this@MainActivity, "No Result", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                )
                             }
                             else
                             {
-                                Toast.makeText(this@MainActivity, "No Result", Toast.LENGTH_LONG).show()
-                            }
 
-                            runOnUiThread(
-                                object : Runnable {
-                                    override fun run() {
-                                        adapter.notifyDataSetChanged()
+                                val gson = Gson()
 
+
+                                val listType: Type =
+                                    object : TypeToken<ArrayList<UnsplashPhoto?>?>() {}.type
+
+
+                                val obj: List<UnsplashPhoto>
+                                obj =
+                                    gson.fromJson(body, listType)
+                                if (obj != null) {
+                                    for (i in obj) {
+                                        adapter.data?.add(i)
                                     }
                                 }
-                            )
+                                else
+                                {
+                                    Toast.makeText(this@MainActivity, "No Result", Toast.LENGTH_LONG).show()
+                                }
+
+                                runOnUiThread(
+                                    object : Runnable {
+                                        override fun run() {
+                                            adapter.notifyDataSetChanged()
+
+                                        }
+                                    }
+                                )
+                            }
+
                         }
                     })
                 }
@@ -298,43 +306,40 @@ class MainActivity : AppCompatActivity() {
 
                         override fun onResponse(call: Call, response: Response) {
                             val body = response?.body?.string()
-                            Log.d("THIS --- ", body)
 
-                            val gson = Gson()
-
-
-                            val obj: SearchResponse
-                            obj =
-                                gson.fromJson(body, SearchResponse::class.java)
-                            if (obj?.results != null) {
-                                for (i in obj?.results) {
-                                    adapter.data?.add(i)
+                            if(response==null || body.equals("Rate Limit Exceeded"))
+                            {
+                                runOnUiThread(
+                                    object : Runnable {
+                                        override fun run() {
+                                            Toast.makeText(this@MainActivity, "No Result", Toast.LENGTH_LONG).show()
+                                        }
+                                    }
+                                )
+                            }
+                            else
+                            {
+                                val gson = Gson()
+                                val obj: SearchResponse
+                                obj =
+                                    gson.fromJson(body, SearchResponse::class.java)
+                                if (obj?.results != null) {
+                                    for (i in obj?.results) {
+                                        adapter.data?.add(i)
+                                    }
                                 }
+                                runOnUiThread(
+                                    object : Runnable {
+                                        override fun run() {
+                                            adapter.notifyDataSetChanged()
+
+                                        }
+                                    }
+                                )
 
                             }
 
 
-
-
-
-
-
-
-                            runOnUiThread(
-                                object : Runnable {
-                                    override fun run() {
-                                        adapter.notifyDataSetChanged()
-
-                                    }
-                                }
-                            )
-
-
-
-
-
-
-                            Log.d("TJOS", "onResponse: ");
                         }
                     })
                 }
